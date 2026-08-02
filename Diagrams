@@ -1,1 +1,37 @@
+# Lab Architecture
 
+```mermaid
+flowchart TB
+    subgraph Endpoint["Monitored Endpoint (Windows 10/11 VM)"]
+        A[Sysmon] --> B[Wazuh Agent]
+    end
+
+    B -->|Encrypted log forwarding| C[Wazuh Manager<br/>or Security Onion]
+
+    subgraph Detection["Detection Layer"]
+        C --> D[Built-in Wazuh Rules]
+        C --> E[Custom Sigma Rules]
+    end
+
+    D --> F[Alerts / Dashboard]
+    E --> F
+
+    F --> G[Analyst Investigation]
+    G --> H[Documentation in docs/]
+    G --> I[MITRE ATT&CK Mapping]
+
+    subgraph Simulation["Attack Simulation"]
+        J[Atomic Red Team] -->|Generates telemetry| A
+    end
+```
+
+## Component Notes
+
+- **Sysmon** provides high-fidelity process, network, and file-event
+  telemetry beyond default Windows logging.
+- **Wazuh Agent** forwards Sysmon and Windows Security Event Log data to
+  the manager.
+- **Wazuh Manager / Security Onion** ingests logs and runs both built-in
+  and custom detection rules.
+- **Atomic Red Team** simulates the attacker behaviors this lab is built
+  to detect, in a safe, scoped, and repeatable way.

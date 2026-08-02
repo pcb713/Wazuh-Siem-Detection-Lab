@@ -1,1 +1,162 @@
+# Detection 01 — Repeated Failed Logins (Brute Force)
 
+**MITRE ATT&CK:** T1110 – Brute Force
+**Log Source:** Windows Security Event Log (Event ID 4625 – failed logon)
+
+## Scenario
+
+Simulate repeated failed login attempts against the Windows endpoint to
+trigger a brute-force detection.
+
+## Simulate It
+
+Using Atomic Red Team (or manually): attempt to log in with an incorrect
+password 5-10 times in a short window against the local account, or use
+Atomic Test **T1110.001** (Password Guessing).
+
+```
+Invoke-AtomicTest T1110.001
+```
+
+## Detection Rule
+
+See [`rules/bruteforce-failed-logins.yml`](../rules/bruteforce-failed-logins.yml)
+— fires when 5+ Event ID 4625 entries occur for the same account within 5
+minutes.
+
+## Investigation Checklist (fill in with your actual findings)
+
+- [ ] Alert timestamp and triggering rule
+- [ ] Source account targeted
+- [ ] Source IP / hostname of the attempts
+- [ ] Number of failed attempts and time window
+- [ ] Was the account eventually locked out or compromised (Event ID 4624 success after failures)?
+- [ ] Screenshot of the alert in your SIEM dashboard → save to `screenshots/`
+
+## Analyst Notes
+
+*(Replace this section with your own write-up once you've run the
+detection: what you saw, how you'd triage it, and what remediation or
+follow-up you'd recommend — e.g., account lockout policy, conditional
+access, MFA enforcement.)*
+
+## Outcome
+
+*(True positive / false positive, and why)*
+
+
+
+
+
+
+
+# Detection 02 — Suspicious PowerShell Execution (Encoded Command)
+
+**MITRE ATT&CK:** T1059.001 – Command and Scripting Interpreter: PowerShell
+**Log Source:** Sysmon Event ID 1 (Process Creation) / PowerShell Script
+Block Logging (Event ID 4104)
+
+## Scenario
+
+Attackers commonly use base64-encoded PowerShell commands to evade simple
+string-based detection and download or execute payloads. This detection
+looks for the `-EncodedCommand` (or `-enc`) flag.
+
+## Simulate It
+
+Atomic Red Team test case **T1059.001**:
+
+```
+Invoke-AtomicTest T1059.001
+```
+
+Or manually run a benign encoded command to test detection logic, e.g.:
+
+```powershell
+powershell.exe -enc <base64-encoded-benign-command>
+```
+
+## Detection Rule
+
+See [`rules/suspicious-powershell.yml`](../rules/suspicious-powershell.yml)
+— fires on `powershell.exe` process creation where the command line contains
+`-enc` or `-EncodedCommand`.
+
+## Investigation Checklist (fill in with your actual findings)
+
+- [ ] Alert timestamp and triggering rule
+- [ ] Parent process (what launched PowerShell — Office app? cmd.exe? browser?)
+- [ ] Decoded contents of the base64 command
+- [ ] User context the process ran under
+- [ ] Any follow-on network connections or file writes from the process
+- [ ] Screenshot of the alert and decoded command → save to `screenshots/`
+
+## Analyst Notes
+
+*(Replace this section with your own write-up once you've run the
+detection: what the decoded command actually did, whether the parent
+process was suspicious, and what you'd do next — isolate host, check for
+persistence, etc.)*
+
+## Outcome
+
+*(True positive / false positive, and why)*
+
+
+
+
+
+
+
+# Detection 03 — Scheduled Task Persistence
+
+**MITRE ATT&CK:** T1053.005 – Scheduled Task/Job: Scheduled Task
+**Log Source:** Windows Security Event Log (Event ID 4698 – Scheduled Task
+Created) / Sysmon Event ID 1
+
+## Scenario
+
+Attackers frequently create a scheduled task as a persistence mechanism so
+their payload survives reboot or re-executes on a timer. This detection
+looks for new scheduled task creation, particularly ones referencing
+suspicious paths (temp folders, unusual binaries).
+
+## Simulate It
+
+Atomic Red Team test case **T1053.005**:
+
+```
+Invoke-AtomicTest T1053.005
+```
+
+Or manually create a benign test task:
+
+```powershell
+schtasks /create /tn "TestPersistence" /tr "calc.exe" /sc onlogon
+```
+
+## Detection Rule
+
+See [`rules/scheduled-task-persistence.yml`](../rules/scheduled-task-persistence.yml)
+— fires on Event ID 4698 (scheduled task created), with additional scoring
+if the task action path is in a temp/user-writable directory.
+
+## Investigation Checklist (fill in with your actual findings)
+
+- [ ] Alert timestamp and triggering rule
+- [ ] Task name and the exact command/binary it runs
+- [ ] User account that created the task
+- [ ] Trigger type (on logon, daily, at startup, etc.)
+- [ ] Is the referenced binary/path legitimate or suspicious?
+- [ ] Screenshot of the alert and task details → save to `screenshots/`
+
+## Analyst Notes
+
+*(Replace this section with your own write-up once you've run the
+detection: whether the task was legitimate software behavior or a real
+persistence indicator, and what remediation you'd recommend — task
+removal, binary analysis, broader host sweep for related IOCs.)*
+
+## Outcome
+
+*(True positive / false positive, and why)*

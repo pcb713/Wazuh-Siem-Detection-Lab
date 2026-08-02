@@ -1,1 +1,44 @@
+# Attack Simulation Guide (Atomic Red Team)
+
+This lab uses [Atomic Red Team](https://github.com/redcanaryco/atomic-red-team)
+to generate realistic attacker telemetry that the detection rules in
+`rules/` are designed to catch. Atomic Red Team is a library of small,
+scoped test cases mapped directly to MITRE ATT&CK techniques — safe to run
+in an isolated lab VM.
+
+## Setup
+
+On the Windows test VM:
+
+```powershell
+IEX (IWR 'https://raw.githubusercontent.com/redcanaryco/invoke-atomicredteam/master/install-atomicredteam.ps1' -UseBasicParsing)
+Install-AtomicRedTeam -getAtomics
+```
+
+## Running the Test Cases for This Lab
+
+**Brute force (T1110.001):**
+```powershell
+Invoke-AtomicTest T1110.001
+```
+
+**Encoded PowerShell (T1059.001):**
+```powershell
+Invoke-AtomicTest T1059.001
+```
+
+**Scheduled task persistence (T1053.005):**
+```powershell
+Invoke-AtomicTest T1053.005
+```
+
+## Important
+
+- Only run these in an isolated lab VM, never on a production or
+  personal-use machine.
+- After each test, check your SIEM to confirm the corresponding rule in
+  `rules/` fired, then document the alert in the matching file under
+  `docs/`.
+- Use `Invoke-AtomicTest <technique> -Cleanup` afterward to revert changes
+  made by the test case where supported.
 

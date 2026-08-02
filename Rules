@@ -1,1 +1,99 @@
+title: Multiple Failed Logon Attempts (Possible Brute Force)
+id: 8c1e0f2a-1b3d-4e2a-9f6c-1a2b3c4d5e6f
+status: stable
+description: >
+  Detects 5 or more failed logon attempts (Event ID 4625) for the same
+  target account within a 5 minute window, which may indicate a
+  brute-force or password-guessing attempt.
+author: Parin Bhikha
+date: 2026/08/01
+references:
+  - https://attack.mitre.org/techniques/T1110/
+tags:
+  - attack.credential_access
+  - attack.t1110
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4625
+  timeframe: 5m
+  condition: selection | count(TargetUserName) by TargetUserName >= 5
+falsepositives:
+  - Users who have forgotten their password
+  - Misconfigured service accounts retrying with stale credentials
+level: medium
 
+
+
+
+
+
+
+title: Scheduled Task Created (Possible Persistence)
+id: 5d6e7f8a-9b0c-4d1e-8f2a-3b4c5d6e7f8a
+status: stable
+description: >
+  Detects creation of a new scheduled task (Event ID 4698), particularly
+  where the action references a temp directory or user-writable path —
+  a common persistence technique.
+author: Parin Bhikha
+date: 2026/08/01
+references:
+  - https://attack.mitre.org/techniques/T1053/005/
+tags:
+  - attack.persistence
+  - attack.t1053.005
+logsource:
+  product: windows
+  service: security
+detection:
+  selection:
+    EventID: 4698
+  suspicious_path:
+    TaskContent|contains:
+      - '\AppData\Local\Temp\'
+      - '\Users\Public\'
+      - '\ProgramData\'
+  condition: selection and suspicious_path
+falsepositives:
+  - Legitimate software installers that register scheduled tasks
+    (e.g., update checkers) — verify the binary and publisher
+level: medium
+
+
+
+
+
+
+
+title: Suspicious PowerShell Execution via Encoded Command
+id: 2f4a6b8c-3d5e-4f7a-8b9c-0d1e2f3a4b5c
+status: stable
+description: >
+  Detects PowerShell being launched with the -EncodedCommand (or -enc)
+  flag, a common technique used to obfuscate malicious commands and
+  evade simple string-based detection.
+author: Parin Bhikha
+date: 2026/08/01
+references:
+  - https://attack.mitre.org/techniques/T1059/001/
+tags:
+  - attack.execution
+  - attack.t1059.001
+logsource:
+  category: process_creation
+  product: windows
+detection:
+  selection:
+    Image|endswith: '\powershell.exe'
+    CommandLine|contains:
+      - '-enc '
+      - '-EncodedCommand'
+      - '-e '
+  condition: selection
+falsepositives:
+  - Legitimate administrative scripts that use encoded commands for
+    non-malicious reasons (verify parent process and decoded content)
+level: high
